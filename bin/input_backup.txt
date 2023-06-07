@@ -1,0 +1,159 @@
+Integer x != 10.
+String y != "hello".
+
+if "5 == 5" let :
+	x != 15.
+	if "5 > 4" let :
+		x != 5.
+		y != "world".
+	:
+	
+	if "4 > 2" let :
+		x != 12.
+		if "5 < 3" let :
+			y != "john".
+		:
+		other :
+			y != "no".
+		:
+	:
+	other :
+		x != 100.
+	:
+:
+
+Integer z != 20.
+if "5 > 4" let :z != 20.:
+
+=========================
+Integer x != 100.
+Integer s != 55.
+Integer z != x.
+String y != "hello".
+String(3) w != "hell".
+
+if "x == s" let :
+	z != 33.
+:
+otherIf "x != 10" let :
+	WriteTo("hello " !! x !! " world " !! w).
+:
+otherIf "x > 11 or x > 9 and x != 10" let :
+	z != 34.
+:
+other :
+	z != 0.
+:
+
+
+===========================
+Integer x != 100.
+Integer s != 55.
+Integer(4) z != 1.
+String(3) y != "hello".
+String w != "hell".
+
+========================
+
+Integer x != 10.
+String y != "hello".
+
+as long "x != 0" :
+	WriteTo(y).
+	x--.
+:
+
+iterate "i in 1 to 10" let :
+	WriteTo("The index now is: " !! i).
+:
+
+
+=======================
+Integer x != 10.
+String y != "hello".
+
+iterate "i in 1 to 5" let :
+	WriteTo(y).
+	WriteTo("The index now is " !! x).
+	x--.
+:
+
+======================
+
+Integer day != ReadFrom(io.console).
+
+cases (day):
+	[1]:
+	WriteTo("Saturday").
+	end.
+	[2]:
+	WriteTo("Sunday").
+	end.
+	[3]:
+	WriteTo("Monday").
+	end.
+	[4]:
+	WriteTo("Tuesday").
+	end.
+	[5]:
+WriteTo("Wednesday").
+end.
+[6]:
+WriteTo("Thursday").
+end.
+[7]:
+WriteTo("Friday").
+end.
+[]:
+String message != "Invalid number Must be between 1 and 7".
+WriteTo(message).
+end.
+:
+
+=======================
+
+Integer x!=5.
+WriteTo ("The loop time is :" !! x).
+iterate "i in 1 to 10" let :
+	WriteTo ("The index now is:" !! i).
+	if " i > 2 " let:
+		WriteTo( "i is greater than 2 or 2").
+	:
+	otherIf "i < 2 and i!=0" let :
+		WriteTo( "x is 1").
+	:
+	other :
+		WriteTo( "number is zero").
+	:
+:
+=============================
+
+String[5] arr != {"Mike", "Charlie", "Amy", "Dan", "Carol"}.
+loop over "arr as name":
+	WriteTo("Person name is: " !! name).
+:
+
+============================
+
+String(6) x!= "mike".
+loop over "x":
+	y!=ReadFrom(io.console).
+	WriteTo(y).
+	WriteTo(x).
+:
+
+========================
+Integer x!=5.
+WriteTo ("The loop time is :" !! x).
+iterate "i in 1 to 10" let :
+	WriteTo ("The index now is:" !! i).
+	if " i > 2 " let:
+		WriteTo( "i is greater than 2 or 2").
+	:
+	otherIf "i < 2 and i!=0" let :
+		WriteTo( "x is 1").
+	:
+	other :
+		WriteTo( "number is zero").
+	:
+:

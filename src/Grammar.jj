@@ -1,0 +1,359 @@
+/** * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+ */options{  static = true;  //LOOKAHEAD = 4;  //DEBUG_PARSER = true; // (default false)}PARSER_BEGIN(TestParser)import nodes.*;import java.io.*;public class TestParser{  public static void main(String args []) throws ParseException, FileNotFoundException  {    TestParser parser = new TestParser(new FileInputStream("./src/input.txt"));    TreeNode rootNode = parser.start();    rootNode.execute();      }}PARSER_END(TestParser)SKIP :{  " "| "\r"| "\t"| "\n"}TOKEN : /* OPERATORS */{  < PLUS : "+" >|  < MINUS : "-" >|  < MULTIPLY : "*" >|  < DIVIDE : "/" >|  < LOGIC : "and" | "or" >|  < INC : "++" >|  < DEC : "--" >}/** Declare all our necessary tokens*/TOKEN :{  < OVERLOOP : "loop over \"" >|  < IF : "if" >|  < OTHER : "other" >|   < OTHER_IF : "otherIf" >|  < LET :  "let" >|  < AS : "as" >|   < WRITE : "WriteTo" >|  < READ : "ReadFrom(io.console)" >|  < AS_LONG : "as long" >|  < ITERATE : "iterate \"" >|  < IN : "in" >|  < TO : "to" >|  < SWITCH : "cases" >
+|  < END : "end" >
+| 
+  < TYPE : "String" | "Integer" >|  < CONCAT : "!!" >|   < QUOTATION : "\"" >|  < DOTS : ":" >|  < COMMA : "," >|   < OP_PARAN : "(" >|   < ED_PARAN : ")" >|   < OP_BRACE : "{" >|   < ED_BRACE : "}" >|   < OP_BRACT : "[" >|   < ED_BRACT : "]" >|  < CASE_END : "[]:" >|   < #DIGIT : [ "0"-"9" ] >|   < #CHAR : [ "a"-"z", "A"-"Z" ] >|   < NUMBER : (< DIGIT >)+ >|  < VAR : ( < CHAR > ) ( < CHAR > | < DIGIT > )* >|  < STRING : < QUOTATION >  ( < CHAR > | < DIGIT > | " " | < OP_BRACT > | < ED_BRACT > | < DOTS > )* < QUOTATION > > |  < OPERATION : "==" | ">" | "<" >|   < ASSIGN : "!=" >|   < EOL : "." >}/** Start state function. It only contains a block  statement that returns a block node.* < EOF > is a token pre-defined in JavaCC that indicates the END of the file (meaning that there's no more input)*/TreeNode start():{  BlockNode block = new BlockNode();}{  block = blockNode()  < EOF >  {    return block;  }}/** The block node is a node that contains multiple statements as children. Its execution runs the execute() function of each of its children in order.* To construct it, we accept multiple statements of types ifCondition, assignment and modification and add each new one as a child to the block node. Once there's no more input, we return the block node.*/BlockNode blockNode() :
+{
+  BlockNode block = new BlockNode();
+  TreeNode node;
+}
+{
+  (
+    (
+      node = ifCondition()
+    |
+      (
+        LOOKAHEAD(2)
+        (
+          node = assignment()
+        )
+      | 
+        LOOKAHEAD(2)
+        (
+          node = arrayAssign()
+        )
+      )    |       node = loopOver()
+    | 
+      node = modification()
+    | 
+      node = writeTo()
+    | 
+      node = asLong()
+    | 
+      node = iterate()
+    | 
+      node = caseStatment()
+    )
+    {
+      block.addChild(node);
+    }
+  )+
+  {
+    return block;
+  }
+}
+LoopOverNode loopOver() :
+{
+  LoopOverNode node = new LoopOverNode();
+  TreeNode block;
+  StringNode name, name2 = null;
+  Token t1, t2;
+}
+{
+  < OVERLOOP > t1 = < VAR >
+  {    name = new StringNode(t1.image);
+    node.addChild(name);
+  }
+  (
+    < AS > t2 = < VAR >
+    {      name2 = new StringNode(t2.image);
+      node.addChild(name2);
+    }
+  )?
+  < QUOTATION > < DOTS > block = blockNode() < DOTS >
+  {
+    node.addChild(block);
+    return node;
+  }
+}
+/** The IfNode and ifCondition function defines the syntax of the IF statement.* It will contain two children: 1. The condition node. 2. A block node that will execute if the condition is true.*/
+IfNode ifCondition() :
+{
+  TreeNode block = new BlockNode();
+  IfNode ifNode = new IfNode();
+  IfNode otherIfNode;
+  IfNode otherNode;
+  MultiCondNode condNode;  MultiCondNode otherIfCondNode;
+  Token t;
+}
+{
+  < IF > < QUOTATION > condNode = multiCondition() < QUOTATION > < LET > < DOTS > block = blockNode() < DOTS >
+  {
+    ifNode.addChild(condNode);
+    ifNode.addChild(block);
+  }    (      < OTHER_IF > < QUOTATION > condNode = multiCondition() < QUOTATION > < LET > < DOTS > block = blockNode() < DOTS >
+      {
+      	ifNode.addChild(condNode);
+      	ifNode.addChild(block);
+      }    )*    (      < OTHER > < DOTS > block = blockNode() < DOTS >      {        ifNode.addChild(block);      }    )?
+  {
+    return ifNode;
+  }
+}
+MultiCondNode multiCondition() :
+{
+  MultiCondNode multiCondNode = new MultiCondNode();
+  ConditionNode cond1, cond2;
+  Token t;
+}
+{
+  cond1 = condition()
+  {
+    multiCondNode.addChild(cond1);
+  }
+  (
+    t = < LOGIC > cond2 = condition()
+    {
+      multiCondNode.addChild(new StringNode(t.image));
+      multiCondNode.addChild(cond2);
+    }
+  )*
+  {
+    return multiCondNode;
+  }
+}
+/** The ConditionNode/ condition statement function defines the condition which is of 3 parts, the first operand, comparison operation and the second operand.*/ConditionNode condition() :
+{
+  ConditionNode node = new ConditionNode();
+  StringNode operationNode;
+  ConstNode op1, op2;
+  Token t1, t2;
+}
+{
+  (
+    t1 = < VAR > operationNode = string()
+    {
+      node.addChild(new StringNode(t1.image));
+    }
+    (
+      t2 = < VAR >
+      {
+        node.addChild(new StringNode(t2.image));
+      }
+    | 
+      op1 = value()
+      {
+        node.addChild(op1);
+      }
+    )
+  | 
+    op1 = value() operationNode = string()
+    {
+      node.addChild(op1);
+    }
+    (
+      t1 = < VAR >
+      {
+        node.addChild(new StringNode(t1.image));
+      }
+    | 
+      op2 = value()
+      {
+        node.addChild(op2);
+      }
+    )
+  )
+  {
+    node.addChild(operationNode);
+    return node;
+  }
+}CaseNode caseStatment() :
+{
+  CaseNode node = new CaseNode();
+  TreeNode block;
+  StringNode s;
+  ConstNode x;
+  Token t1, t2;
+}
+{
+  < SWITCH > < OP_PARAN > t1 = < VAR > < ED_PARAN > < DOTS >
+  {
+    s = new StringNode(t1.image);
+    node.addChild(s);
+  }
+  (
+    < OP_BRACT >
+    (
+      t2 = < NUMBER >
+    |      t2 = < STRING >
+    )
+    < ED_BRACT > 
+    < DOTS > 
+    block = blockNode() 
+    < END > < EOL >
+    {
+      x = new ConstNode(t2.image);
+      node.addChild(x);
+      node.addChild(block);
+    }
+  )*
+  (
+    < CASE_END > 
+    block = blockNode() 
+    < END > < EOL >
+    < DOTS >
+    {
+      s = new StringNode("[]:");
+      node.addChild(s);
+      node.addChild(block);
+      return node;
+    }
+  )?
+  < DOTS >
+  {
+    return node;
+  }
+}
+AsLongNode asLong():{  AsLongNode node = new AsLongNode();  MultiCondNode multiNode;  TreeNode block = new BlockNode();}{  < AS_LONG > < QUOTATION > multiNode = multiCondition() < QUOTATION > < DOTS > block = blockNode() < DOTS >  {    node.addChild(multiNode);    node.addChild(block);    return node;  }}IterateNode iterate():{  IterateNode node = new IterateNode();  TreeNode block = new BlockNode();  ConstNode op1, op2;  Token var;}{  < ITERATE > var = < VAR > < IN > op1 = value() < TO > op2 = value() < QUOTATION > < LET > < DOTS > block = blockNode() < DOTS >  {    node.addChild(new StringNode(var.image));    node.addChild(op1);    node.addChild(op2);    node.addChild(block);	return node;  }}StringNode string() :
+{
+  StringNode stringNode;
+  Token token;
+}
+{
+  (
+    token = < STRING >
+    {
+      String str = token.image;
+      if (str == null || str.length() < 3)
+      {
+        str = "";
+      }
+      else
+      {
+        str = str.substring(1, str.length() - 1);
+      }
+      stringNode = new StringNode(str);
+    }
+  | 
+    token = < OPERATION >
+    {
+      stringNode = new StringNode(token.image);
+    }
+  | 
+    token = < ASSIGN >
+    {
+      stringNode = new StringNode(token.image);
+    }
+  )
+  {
+    return stringNode;
+  }
+}
+/** AssignNode and assignment statement function define the assignment/declaratino statement.* It has three children: 1. Variable type. 2. Variable name. 3. Variable value.*/AssignNode assignment() :{  AssignNode node = new AssignNode();  ReadNode readNode = new ReadNode();  Token t1, t2, t3 = null;  boolean isVar = false, isRead = false;}{  t1 = < TYPE >  t2 = < VAR >  (    < ASSIGN >    (      t3 = < NUMBER >    |       t3 = < STRING >    |      t3 = < VAR > { isVar = true; }    |      < READ > { isRead = true; }    )  )?  < EOL >  {    StringNode typeNode = new StringNode(t1.image);    StringNode nameNode = new StringNode(t2.image);    node.addChild(typeNode);    node.addChild(nameNode);    if (t3 != null)    {      StringNode valueNode = new StringNode(t3.image);      StringNode isVarNode = new StringNode(Boolean.toString(isVar));      node.addChild(valueNode);      node.addChild(isVarNode);    } else if (isRead) {      StringNode isVarNode = new StringNode(Boolean.toString(isVar));      node.addChild(readNode);      node.addChild(isVarNode);    }        return node;  }}ArrayNode arrayAssign() :
+{
+  ArrayNode arrayNode = new ArrayNode();
+  ConstNode num;
+  Token t1, t2, t3;
+  boolean isSpecial = false;
+}
+{
+  t1 = < TYPE >
+  {
+    arrayNode.addChild(new StringNode(t1.image));
+  }
+  (
+    < OP_BRACT > num = value() < ED_BRACT > t2 = < VAR > < ASSIGN > < OP_BRACE >
+    {
+      arrayNode.addChild(num);
+      arrayNode.addChild(new StringNode(t2.image));
+      arrayNode.addChild(new StringNode(Boolean.toString(isSpecial)));
+    }
+    (
+      t3 = < STRING >
+      {
+        arrayNode.addChild(new StringNode(t3.image));
+      }
+      (
+        < COMMA > t3 = < STRING >
+        {
+          arrayNode.addChild(new StringNode(t3.image));
+        }
+      )*
+    | 
+      num = value()
+      {
+        arrayNode.addChild(num);
+      }
+      (
+        < COMMA > num = value()
+        {
+          arrayNode.addChild(num);
+        }
+      )*
+    )
+    < ED_BRACE >
+  | 
+    < OP_PARAN > num = value() < ED_PARAN > t2 = < VAR > < ASSIGN >
+    {
+      isSpecial = true;
+      arrayNode.addChild(num);
+      arrayNode.addChild(new StringNode(t2.image));
+      arrayNode.addChild(new StringNode(Boolean.toString(isSpecial)));
+    }
+    (
+      t3 = < STRING >
+      {
+        arrayNode.addChild(new StringNode(t3.image));
+      }
+    | 
+      num = value()
+      {
+        arrayNode.addChild(num);
+      }
+    )
+  )
+  < EOL >
+  {
+    return arrayNode;
+  }
+}
+/** ModNode/modification statement function defines the modification statement which contains two children:* 1. The variable name that we need to modify. 2. The new value to be set to the variable.*/ModNode modification() :{  ModNode mod = new ModNode();  Token t1, t2 = null;  boolean isVar = false, isOP = false, isRead = false;}{  t1 = < VAR >  (    < ASSIGN >    (      t2 = < NUMBER >    |       t2 = < STRING >    |       t2 = < VAR > { isVar = true; }    |      < READ > { isRead = true; }    )  |    (      t2 = < INC >    |       t2 = < DEC >    )    {      isOP = true;    }  )  < EOL >  {    StringNode nameNode = new StringNode(t1.image);    mod.addChild(nameNode);    if (isRead) {      ReadNode valueNode = new ReadNode();      mod.addChild(valueNode);    } else {      StringNode valueNode = new StringNode(t2.image);      mod.addChild(valueNode);    }    StringNode isVarNode = new StringNode(Boolean.toString(isVar));    mod.addChild(isVarNode);    StringNode isOPNode = new StringNode(Boolean.toString(isOP));    mod.addChild(isOPNode);    return mod;  }}WriteNode writeTo() :
+{
+  WriteNode writeNode = new WriteNode();
+  StringNode valueNode;
+  boolean isVar;
+  Token t;
+}
+{
+  < WRITE > < OP_PARAN >
+  (
+    t = < VAR >
+    {
+      isVar = true;
+      writeNode.addChild(new StringNode(Boolean.toString(isVar)));
+      valueNode = new StringNode(t.image);
+      writeNode.addChild(valueNode);
+    }
+  | 
+    t = < STRING >
+    {
+      isVar = false;
+      writeNode.addChild(new StringNode(Boolean.toString(isVar)));
+      valueNode = new StringNode(t.image);
+      writeNode.addChild(valueNode);
+    }
+  )
+  (
+    < CONCAT >
+    (
+      t = < VAR >
+      {
+        isVar = true;
+        writeNode.addChild(new StringNode(Boolean.toString(isVar)));
+        valueNode = new StringNode(t.image);
+        writeNode.addChild(valueNode);
+      }
+    | 
+      t = < STRING >
+      {
+        isVar = false;
+        writeNode.addChild(new StringNode(Boolean.toString(isVar)));
+        valueNode = new StringNode(t.image);
+        writeNode.addChild(valueNode);
+      }
+    )
+  )*
+  < ED_PARAN > < EOL >
+  {    return writeNode;
+  }
+}
+ConstNode value():{	Token token;}{   token = < NUMBER > { return new ConstNode(token.image); }}

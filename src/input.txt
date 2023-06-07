@@ -1,0 +1,7 @@
+String(6) x!= "mike".
+Integer y.
+loop over "x":
+	y != ReadFrom(io.console).
+	WriteTo(y).
+	WriteTo(x).
+:
